@@ -17,15 +17,15 @@ jobs:
 
       - run: docker login -u ${{ secrets.DOCKER_USER_NAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
-      - run: docker build -t arun/multi-client-10-14 ./client
-      - run: docker build -t arun/multi-nginx-10-14 ./nginx
-      - run: docker build -t arun/multi-server-10-14 ./server
-      - run: docker build -t arun/multi-worker-10-14 ./worker
+      - run: docker build -t ${{ secrets.DOCKER_USER_NAME }}/multi-client-10-14 ./client
+      - run: docker build -t ${{ secrets.DOCKER_USER_NAME }}/multi-nginx-10-14 ./nginx
+      - run: docker build -t ${{ secrets.DOCKER_USER_NAME }}/multi-server-10-14 ./server
+      - run: docker build -t ${{ secrets.DOCKER_USER_NAME }}/multi-worker-10-14 ./worker
 
-      - run: docker push arun/multi-client-10-14
-      - run: docker push arun/multi-nginx-10-14
-      - run: docker push arun/multi-server-10-14
-      - run: docker push arun/multi-worker-10-14
+      - run: docker push ${{ secrets.DOCKER_USER_NAME }}/multi-client-10-14
+      - run: docker push ${{ secrets.DOCKER_USER_NAME }}/multi-nginx-10-14
+      - run: docker push ${{ secrets.DOCKER_USER_NAME }}/multi-server-10-14
+      - run: docker push ${{ secrets.DOCKER_USER_NAME }}/multi-worker-10-14
 
       - name: Generate Deployment Package
         run: zip -r deploy.zip . -x '*.git*'
