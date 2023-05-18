@@ -1,0 +1,53 @@
+name: Deploy MultiContainer
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: docker build -t arun/react-test -f ./client/Dockerfile.dev ./client
+      - run: docker run -e CI=true arun/react-test npm test a -- --coverage
+
+      - run: docker login -u ${{ secrets.DOCKER_USER_NAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+      - run: docker build -t ${{ secrets.DOCKER_USER_NAME }}/multi-client-10-14 ./client
+      - run: docker build -t ${{ secrets.DOCKER_USER_NAME }}/multi-nginx-10-14 ./nginx
+      - run: docker build -t ${{ secrets.DOCKER_USER_NAME }}/multi-server-10-14 ./server
+      - run: docker build -t ${{ secrets.DOCKER_USER_NAME }}/multi-worker-10-14 ./worker
+
+      - run: docker push ${{ secrets.DOCKER_USER_NAME }}/multi-client-10-14
+      - run: docker push ${{ secrets.DOCKER_USER_NAME }}/multi-nginx-10-14
+      - run: docker push ${{ secrets.DOCKER_USER_NAME }}/multi-server-10-14
+      - run: docker push ${{ secrets.DOCKER_USER_NAME }}/multi-worker-10-14
+
+      - name: Generate Deployment Package
+        run: zip -r deploy.zip . -x '*.git*'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate deployment package
+        run: zip -r deploy.zip . -x '*.git*'
+
+      - name: Deploy to EB
+        uses: einaregilsson/beanstalk-deploy@v18
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }}
+          application_name: ap-multi-docker
+          environment_name: Ap-multi-docker-env
+          existing_bucket_name: elasticbeanstalk-ap-south-1-160071257600
+          region: ap-south-1
+          version_label: ${{ github.sha }}
+          deployment_package: deploy.zip
